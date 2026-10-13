@@ -487,10 +487,10 @@ function calculateHeld() {
       : null)
     .filter(Boolean);
 
-  document.getElementById("bestItem").textContent =
-    combination.length
-      ? combination.join(" + ")
-      : "구매 가능 아이템 없음";
+document.getElementById("bestItem").innerHTML =
+  combination.length
+    ? combination.join("<br>")
+    : "구매 가능 아이템 없음";
 
   document.getElementById("bestRatio").textContent =
     used > 0
