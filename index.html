@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도깨비의 세계 | 영석 금전 계산기</title>
+<style>
+:root {
+  font-family: "Malgun Gothic", Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: #111827;
+  color: #f3f4f6;
+  margin: 0;
+  padding: 25px 12px;
+}
+main { max-width: 980px; margin: auto; }
+h1 { font-size: 25px; margin-bottom: 6px; }
+h2 { font-size: 17px; margin: 0 0 16px; }
+p { color: #9ca3af; font-size: 13px; }
+.card {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 18px;
+}
+.packages {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.package {
+  text-align: center;
+  background: #111827;
+  border-radius: 8px;
+  padding: 14px 6px;
+}
+.package strong { display: block; color: #fbbf24; }
+.package span { font-size: 12px; color: #cbd5e1; }
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+button, select {
+  background: #374151;
+  border: 1px solid #4b5563;
+  color: white;
+  border-radius: 7px;
+  padding: 10px 13px;
+  cursor: pointer;
+}
+button:hover { background: #4b5563; }
+.primary { background: #2563eb; border-color: #2563eb; }
+.primary:hover { background: #1d4ed8; }
+table { width: 100%; border-collapse: collapse; }
+th, td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #374151;
+  text-align: right;
+}
+th { color: #9ca3af; font-size: 12px; }
+td { font-size: 14px; }
+th:first-child, td:first-child { text-align: left; }
+td input {
+  width: 110px;
+  max-width: 100%;
+  padding: 9px;
+  background: #111827;
+  color: white;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  text-align: right;
+  font-size: 14px;
+}
+.ratio { color: #34d399; font-weight: bold; }
+.rank { color: #fbbf24; }
+.sub { color: #9ca3af; font-size: 12px; }
+#status { font-size: 13px; color: #9ca3af; }
+.highlight {
+  padding: 15px;
+  border-radius: 9px;
+  background: #111827;
+  margin-top: 16px;
+}
+.highlight strong { color: #34d399; font-size: 20px; }
+@media (max-width: 650px) {
+  h1 { font-size: 21px; }
+  .card { padding: 12px; }
+  .packages { grid-template-columns: repeat(3, 1fr); }
+  th, td { padding: 9px 4px; font-size: 12px; }
+  td input { width: 76px; }
+}
+
+/* 보유 영석 계산 3개 박스 */
+.held-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* 개별 박스 */
+.held-box {
+  background: #111827;
+  border-radius: 10px;
+  padding: 22px 20px;
+  min-height: 125px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* 항목 제목 */
+.held-label {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* 최고 비율 아이템 */
+.held-value {
+  color: #f3f4f6;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* 영석당 금전 비율 */
+.held-ratio {
+  color: #34d399;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* 획득 가능 금전 */
+.held-gold {
+  color: #fbbf24;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 보유 영석 입력 */
+#heldStones {
+  width: 100%;
+  background: #1f2937;
+  border: 1px solid #4b5563;
+  color: white;
+  border-radius: 7px;
+  padding: 10px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* 보조 설명 */
+.held-desc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 구매 수량 및 잔여 영석 */
+.held-detail {
+  margin-top: 18px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* 모바일 화면 */
+@media (max-width: 650px) {
+  .held-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .held-box {
+    min-height: 100px;
+    padding: 16px;
+  }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <h1>도깨비의 세계 · 영석 → 금전 계산기</h1>
+  <p>거래소 수수료 10% 적용 · 실시간 효율 비교</p>
+
+  <section class="card">
+    <h2>영석 충전 가격 (고정)</h2>
+    <div class="packages" id="packages"></div>
+    <p>모든 충전 상품: 1영석 = 13.75원</p>
+  </section>
+
+
+
+<section class="card">
+  <h2>보유 영석 계산</h2>
+
+  <div class="held-grid">
+
+    <div class="held-box">
+      <div class="held-label">보유 영석</div>
+      <input id="heldStones"
+             type="number"
+             min="0"
+             value="1000"
+             oninput="calculateHeld()">
+      <div class="held-desc">영석 수량 직접 입력</div>
+    </div>
+
+    <div class="held-box">
+      <div class="held-label">최고 비율 (자동 선택)</div>
+      <div id="bestItem" class="held-value">-</div>
+      <div id="bestRatio" class="held-ratio">-</div>
+    </div>
+
+    <div class="held-box">
+      <div class="held-label">획득 가능 금전</div>
+      <div id="availableGold" class="held-gold">0</div>
+      <div class="held-desc">거래소 수수료 10% 차감</div>
+    </div>
+
+  </div>
+
+  <p id="purchaseDetail" class="held-detail"></p>
+</section>
+
+
+  <section class="card">
+    <h2>아이템 거래소 시세 및 환산 효율</h2>
+    <div class="toolbar">
+      <button class="primary" onclick="savePrices()">시세 저장</button>
+      <button onclick="loadPrices()">저장된 시세 불러오기</button>
+      <button onclick="resetPrices()">최초 시세 초기화</button>
+      <select id="sort" onchange="render()">
+        <option value="default">기본 순서</option>
+        <option value="ratio">금전 효율 높은 순</option>
+        <option value="ratioAsc">금전 효율 낮은 순</option>
+      </select>
+    </div>
+
+    <div id="status">현재 시세를 수정할 수 있습니다.</div>
+
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>아이템</th>
+            <th>구매 영석</th>
+            <th>거래소 시세</th>
+            <th>실수령 금전</th>
+            <th>금전/영석</th>
+          </tr>
+        </thead>
+        <tbody id="items"></tbody>
+      </table>
+    </div>
+    <div class="highlight" id="best"></div>
+    <p>실수령 금전 = 거래소 시세 × 0.9</p>
+    <p>1영석당 금전 = 실수령 금전 ÷ 아이템 구매 영석</p>
+  </section>
+</main>
+
+<script>
+const STORAGE_KEY = "dokkaebi_exchange_prices_v1";
+const packs = [
+  [240, 3300],
+  [800, 11000],
+  [2400, 33000],
+  [4000, 55000],
+  [7200, 99000]
+];
+
+const defaults = [
+  {name:"전투 멤버십 10일", stone:270, price:1200},
+  {name:"전투 멤버십 20일", stone:540, price:2800},
+  {name:"전투 멤버십 30일", stone:800, price:3300},
+  {name:"성장 멤버십 10일", stone:540, price:3200},
+  {name:"성장 멤버십 20일", stone:1080, price:6000},
+  {name:"성장 멤버십 30일", stone:1600, price:7200},
+  {name:"의복", stone:1600, price:7500},
+  {name:"탈것", stone:1600, price:7000},
+  {name:"천요석", stone:60, price:320},
+  {name:"가속권 (30분)", stone:180, price:880}
+];
+
+let prices = defaults.map(item => item.price);
+let savedSnapshot = null;
+const format = n => Number(n).toLocaleString("ko-KR", {
+  maximumFractionDigits: 2
+});
+
+document.getElementById("packages").innerHTML =
+  packs.map(([stone, won]) => `
+    <div class="package">
+      <strong>${format(stone)} 영석</strong>
+      <span>${format(won)}원</span>
+    </div>
+  `).join("");
+
+function ratio(index) {
+  return prices[index] * 0.9 / defaults[index].stone;
+}
+
+function render() {
+  const sort = document.getElementById("sort").value;
+  let indices = defaults.map((_, i) => i);
+
+  if (sort === "ratio")
+    indices.sort((a,b) => ratio(b) - ratio(a));
+  if (sort === "ratioAsc")
+    indices.sort((a,b) => ratio(a) - ratio(b));
+
+  const tbody = document.getElementById("items");
+  tbody.innerHTML = indices.map(i => {
+    const item = defaults[i];
+    return `
+      <tr>
+        <td>${item.name}</td>
+        <td>${format(item.stone)}</td>
+        <td>
+          <input type="number" min="0" step="1"
+            value="${prices[i]}"
+            aria-label="${item.name} 거래소 시세"
+            oninput="changePrice(${i},this.value)">
+        </td>
+        <td>${format(prices[i] * 0.9)}</td>
+        <td class="ratio">${format(ratio(i))}</td>
+      </tr>`;
+  }).join("");
+
+  const bestIndex = defaults.reduce((best,i,index) =>
+    ratio(index) > ratio(best) ? index : best, 0);
+
+  document.getElementById("best").innerHTML = `
+    <div class="sub">현재 가장 효율적인 아이템</div>
+    <h2 class="rank">${defaults[bestIndex].name}</h2>
+    <strong>${format(ratio(bestIndex))} 금전 / 영석</strong>
+  `;
+
+  const changed = savedSnapshot === null
+    ? true
+    : JSON.stringify(prices) !== JSON.stringify(savedSnapshot);
+  document.getElementById("status").textContent =
+    changed ? "● 저장되지 않은 시세 변경사항이 있습니다." :
+    "✓ 현재 시세가 저장되어 있습니다.";
+}
+
+function changePrice(index, value) {
+  prices[index] = Math.max(0, Number(value) || 0);
+
+  // 입력 포커스 및 커서 위치 유지를 위해
+  // 현재 행의 계산 결과만 갱신합니다.
+  const input = document.activeElement;
+  const row = input.closest("tr");
+  if (row) {
+    row.cells[3].textContent = format(prices[index] * 0.9);
+    row.cells[4].textContent = format(ratio(index));
+  }
+  refreshSummary();
+}
+
+function refreshSummary() {
+  const bestIndex = defaults.reduce((best,item,index) =>
+    ratio(index) > ratio(best) ? index : best, 0);
+
+  document.getElementById("best").innerHTML = `
+    <div class="sub">현재 가장 효율적인 아이템</div>
+    <h2 class="rank">${defaults[bestIndex].name}</h2>
+    <strong>${format(ratio(bestIndex))} 금전 / 영석</strong>
+  `;
+  document.getElementById("status").textContent =
+    JSON.stringify(prices) === JSON.stringify(savedSnapshot)
+      ? "✓ 현재 시세가 저장되어 있습니다."
+      : "● 저장되지 않은 시세 변경사항이 있습니다.";
+}
+
+function savePrices() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prices));
+    savedSnapshot = [...prices];
+    refreshSummary();
+    alert("거래소 시세가 저장되었습니다.");
+  } catch (e) {
+    alert("저장에 실패했습니다. 브라우저 저장 권한을 확인하세요.");
+  }
+}
+
+function loadPrices() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) {
+      alert("저장된 시세가 없습니다.");
+      return;
+    }
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed) ||
+        parsed.length !== defaults.length ||
+        !parsed.every(v => Number.isFinite(v) && v >= 0)) {
+      throw new Error("잘못된 데이터");
+    }
+    prices = [...parsed];
+    savedSnapshot = [...parsed];
+    render();
+  } catch (e) {
+    alert("저장된 시세를 불러올 수 없습니다.");
+  }
+}
+
+function resetPrices() {
+  if (!confirm("최초 거래소 시세로 되돌리겠습니까?")) return;
+  prices = defaults.map(x => x.price);
+  render();
+}
+
+
+function calculateHeld() {
+  const held = Math.max(
+    0,
+    Math.floor(Number(
+      document.getElementById("heldStones").value
+    ) || 0)
+  );
+
+  const ranked = defaults.map((item, i) => ({
+    name: item.name,
+    stone: item.stone,
+    price: prices[i],
+    ratio: ratio(i)
+  })).sort((a, b) => b.ratio - a.ratio);
+
+  const best = ranked[0];
+  const count = Math.floor(held / best.stone);
+  const remaining = held - count * best.stone;
+  const gold = Math.floor(count * best.price * 0.9);
+
+  document.getElementById("bestItem").textContent =
+  `${best.name} (${format(best.stone)}영석)`;
+  document.getElementById("bestRatio").textContent =
+    format(best.ratio) + " 금전/영석";
+  document.getElementById("availableGold").textContent =
+    format(gold) + " 금전";
+  document.getElementById("purchaseDetail").textContent =
+    `구매 가능 ${count}개 · 잔여 영석 ${format(remaining)}개`;
+}
+
+
+// 최초 실행 시 저장된 시세 자동 불러오기
+try {
+  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if (Array.isArray(stored) &&
+      stored.length === defaults.length &&
+      stored.every(v => Number.isFinite(v) && v >= 0)) {
+    prices = [...stored];
+    savedSnapshot = [...stored];
+  }
+} catch(e) {}
+render();
+</script>
+</body>
+</html>
