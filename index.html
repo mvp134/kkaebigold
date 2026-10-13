@@ -420,6 +420,7 @@ function resetPrices() {
 
 
 
+
 function calculateHeld() {
   const held = Math.max(
     0,
@@ -428,47 +429,82 @@ function calculateHeld() {
     ) || 0)
   );
 
-  // 보유 영석으로 구매 가능한 아이템만 선택
-  const available = defaults.map((item, i) => ({
+  const items = defaults.map((item, i) => ({
     name: item.name,
     stone: item.stone,
     price: prices[i],
+    gold: prices[i] * 0.9,
     ratio: ratio(i)
-  }))
-  .filter(item => item.stone <= held)
-  .sort((a, b) => b.ratio - a.ratio);
+  }));
 
-  // 구매 가능한 아이템이 없는 경우
-  if (available.length === 0) {
-    document.getElementById("bestItem").textContent =
-      "구매 가능 아이템 없음";
-    document.getElementById("bestRatio").textContent = "-";
-    document.getElementById("availableGold").textContent =
-      "0 금전";
-    document.getElementById("purchaseDetail").textContent =
-      `잔여 영석 ${format(held)}개`;
-    return;
+  // 최대 획득 금전 계산
+  const dp = new Float64Array(held + 1);
+  const choice = new Int32Array(held + 1).fill(-1);
+
+  for (let s = 1; s <= held; s++) {
+    dp[s] = dp[s - 1];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (item.stone <= s) {
+        const candidate = dp[s - item.stone] + item.gold;
+
+        if (candidate > dp[s] + 1e-8) {
+          dp[s] = candidate;
+          choice[s] = i;
+        }
+      }
+    }
   }
 
-  // 구매 가능한 아이템 중 최고 비율
-  const best = available[0];
+  // 조합 복원
+  const counts = new Array(items.length).fill(0);
+  let remaining = held;
 
-  const count = Math.floor(held / best.stone);
-  const remaining = held - count * best.stone;
-  const gold = Math.floor(count * best.price * 0.9);
+  while (remaining > 0) {
+    const i = choice[remaining];
+
+    if (i === -1) {
+      remaining--;
+    } else {
+      counts[i]++;
+      remaining -= items[i].stone;
+    }
+  }
+
+  const used = counts.reduce(
+    (sum, count, i) => sum + count * items[i].stone, 0
+  );
+
+  const totalGold = counts.reduce(
+    (sum, count, i) => sum + count * items[i].gold, 0
+  );
+
+  const combination = counts
+    .map((count, i) => count > 0
+      ? `${items[i].name} × ${count}`
+      : null)
+    .filter(Boolean);
 
   document.getElementById("bestItem").textContent =
-    `${best.name} (${format(best.stone)}영석)`;
+    combination.length
+      ? combination.join(" + ")
+      : "구매 가능 아이템 없음";
 
   document.getElementById("bestRatio").textContent =
-    `${format(best.ratio)} 금전/영석`;
+    used > 0
+      ? `${format(totalGold / used)} 금전/영석`
+      : "-";
 
   document.getElementById("availableGold").textContent =
-    `${format(gold)} 금전`;
+    `${format(totalGold)} 금전`;
 
   document.getElementById("purchaseDetail").textContent =
-    `구매 가능 ${count}개 · 잔여 영석 ${format(remaining)}개`;
+    `소모 영석 ${format(used)}개 · ` +
+    `잔여 영석 ${format(held - used)}개`;
 }
+
 
 
 
